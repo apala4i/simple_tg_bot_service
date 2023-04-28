@@ -23,6 +23,16 @@ func NewTgBotServer(bot *TgBot) *TgBotServer {
 	return &TgBotServer{bot: bot, tasks: make(map[string]Task)}
 }
 
+func NewBaseTgBotServer(api string) *TgBotServer {
+	tgBotApi, err := tgbotapi.NewBotAPI("6047991927:AAGeEp7AiAXkfnyvoShJFUn_a8T-4ZYgd0E")
+	tgBotApi.Debug = true
+	if err != nil {
+		panic(err)
+	}
+	bot := NewTgBot(tgBotApi)
+	return NewTgBotServer(bot)
+}
+
 func (c *TgBotServer) AddTask(endpoint string, task Task) {
 	endpoint += " @" + c.bot.GetBot().Self.UserName
 	c.tasks[endpoint] = task
