@@ -33,14 +33,19 @@ func (c *TgBotServer) Start() {
 
 	updates := c.bot.Api.GetUpdatesChan(u)
 	for update := range updates {
-		if update.Message != nil {
-			task, ok := c.tasks[update.Message.Text]
-			if ok {
-				err := task.Action(c.bot, update)
-				if err != nil {
-					logrus.Errorf("error, while processing task: %v", err)
-				}
+		if update.Message == nil {
+			continue
+		}
+		if !update.Message.IsCommand() {
+			continue
+		}
+		task, ok := c.tasks[update.Message.Text]
+		if ok {
+			err := task.Action(c.bot, update)
+			if err != nil {
+				logrus.Errorf("error, while processing task: %v", err)
 			}
 		}
+
 	}
 }
