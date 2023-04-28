@@ -23,8 +23,8 @@ func NewTgBotServer(bot *TgBot) *TgBotServer {
 	return &TgBotServer{bot: bot, tasks: make(map[string]Task)}
 }
 
-func NewBaseTgBotServer(api string) *TgBotServer {
-	tgBotApi, err := tgbotapi.NewBotAPI("6047991927:AAGeEp7AiAXkfnyvoShJFUn_a8T-4ZYgd0E")
+func NewBaseTgBotServer(token string) *TgBotServer {
+	tgBotApi, err := tgbotapi.NewBotAPI(token)
 	tgBotApi.Debug = true
 	if err != nil {
 		panic(err)
