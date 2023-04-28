@@ -1,15 +1,15 @@
 package main
 
 import (
+	"github.com/apala4i/simple_tg_bot_service/maintainer"
 	"github.com/apala4i/simple_tg_bot_service/services"
 	"github.com/apala4i/simple_tg_bot_service/tasks"
-	"github.com/apala4i/simple_tg_bot_service/tg_bots_maintainer"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	maintainer := tg_bots_maintainer.NewMaintainer()
+	maintainer := maintainer.NewMaintainer()
 	bot, err := tgbotapi.NewBotAPI("testtoken")
 	if err != nil {
 		logrus.Panicf("cannot init Bot. Error: %s", err)

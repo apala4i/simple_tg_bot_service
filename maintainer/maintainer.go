@@ -1,4 +1,4 @@
-package tg_bots_maintainer
+package maintainer
 
 import "github.com/apala4i/simple_tg_bot_service/services"
 
