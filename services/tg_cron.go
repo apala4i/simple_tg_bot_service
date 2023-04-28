@@ -24,6 +24,7 @@ func NewTgBotServer(bot *TgBot) *TgBotServer {
 }
 
 func (c *TgBotServer) AddTask(endpoint string, task Task) {
+	endpoint += " @" + c.bot.GetBot().Self.UserName
 	c.tasks[endpoint] = task
 }
 
