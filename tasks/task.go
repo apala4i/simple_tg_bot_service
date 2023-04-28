@@ -1,7 +1,7 @@
 package tasks
 
 import (
-	"testProjects/priceChecker/simple_tg_bot/services"
+	"github.com/apala4i/simple_tg_bot_service/services"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
