@@ -14,6 +14,7 @@ func (t *TaskImpl) Action(tgBot *services.TgBot, update tgbotapi.Update) error {
 	return t.ActionFunc(tgBot, update)
 }
 
+// noinspection GoUnusedExportedFunction
 func NewTask(ActionFunc func(tgBot *services.TgBot, update tgbotapi.Update) error) services.Task {
 	return &TaskImpl{ActionFunc: ActionFunc}
 }
