@@ -23,6 +23,7 @@ func NewTgBotServer(bot *TgBot) *TgBotServer {
 	return &TgBotServer{bot: bot, tasks: make(map[string]Task)}
 }
 
+// noinspection GoUnusedExportedFunction
 func NewBaseTgBotServer(token string) *TgBotServer {
 	tgBotApi, err := tgbotapi.NewBotAPI(token)
 	tgBotApi.Debug = true
