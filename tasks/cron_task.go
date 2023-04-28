@@ -2,8 +2,9 @@ package tasks
 
 import (
 	"sync"
-	"testProjects/priceChecker/simple_tg_bot/services"
 	"time"
+
+	"github.com/apala4i/simple_tg_bot_service/services"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
@@ -35,6 +36,7 @@ func NewReplyCronAction(task services.Task, msg string, sleepTime time.Duration)
 	return NewCronTask(task, BaseFailureTask{msg: msg}, sleepTime)
 }
 
+// noinspection GoUnusedExportedFunction
 func NewDefaultCronAction(task services.Task, sleepTime time.Duration) services.Task {
 	return NewReplyCronAction(task, defaultMsg, sleepTime)
 }

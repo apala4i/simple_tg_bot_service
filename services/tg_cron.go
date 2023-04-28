@@ -18,6 +18,7 @@ type TaskWithData interface {
 	Action(tgBot *TgBot, chatId int64, data struct{}) error
 }
 
+// noinspection GoUnusedExportedFunction
 func NewTgBotServer(bot *TgBot) *TgBotServer {
 	return &TgBotServer{bot: bot, tasks: make(map[string]Task)}
 }

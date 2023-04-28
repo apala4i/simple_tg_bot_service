@@ -11,6 +11,7 @@ type TgBot struct {
 	m   sync.Mutex
 }
 
+// noinspection GoUnusedExportedFunction
 func NewTgBot(bot *tgbotapi.BotAPI) *TgBot {
 	return &TgBot{
 		Api: bot,
