@@ -1,4 +1,4 @@
-module github.com/apala4i/simple_tg_bot_service/services
+module github.com/apala4i/simple_tg_bot_service
 
 go 1.20
 
