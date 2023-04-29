@@ -5,25 +5,26 @@ import (
 	"github.com/apala4i/simple_tg_bot_service/services"
 	"github.com/apala4i/simple_tg_bot_service/tasks"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
-	"github.com/sirupsen/logrus"
 )
 
+// simple example of library usage
 func main() {
-	maintainer := maintainer.NewMaintainer()
-	bot, err := tgbotapi.NewBotAPI("testtoken")
-	if err != nil {
-		logrus.Panicf("cannot init Bot. Error: %s", err)
-	}
-	server := services.NewTgBotServer(services.NewTgBot(bot))
-	server.AddTask("/popa", tasks.NewTask(
-		func(tgBot *services.TgBot, update tgbotapi.Update) error {
-			err := tgBot.SendMessage(update.Message.Chat.ID, "popa")
-			if err != nil {
-				return err
-			}
-			return nil
-		}))
 
-	maintainer.AddServer(bot.Self.UserName, server)
-	maintainer.Start()
+	// create maintainer for tg bots
+	mt := maintainer.NewMaintainer()
+
+	// create tg bot
+	bot := services.NewBaseTgBotServer("put_your_token_here")
+
+	// create task
+	task := tasks.NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
+		return tgBot.SendMessage(update.Message.Chat.ID, "hello")
+	}, "/hello")
+
+	// add task to tg bot
+	bot.AddTask(task)
+
+	mt.AddServer("bot name", bot)
+
+	mt.Start()
 }
