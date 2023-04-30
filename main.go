@@ -20,7 +20,7 @@ func main() {
 	mt := maintainer.NewMaintainer()
 
 	// create tg bot
-	bot := services.NewBaseTgBotServer("6047991927:AAGeEp7AiAXkfnyvoShJFUn_a8T-4ZYgd0E")
+	bot := services.NewBaseTgBotServer("put_your_token_here")
 
 	// create task
 	task := tasks.NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
