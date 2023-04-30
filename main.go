@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
 	"time"
 
 	"github.com/apala4i/simple_tg_bot_service/maintainer"
@@ -17,12 +20,14 @@ func main() {
 	mt := maintainer.NewMaintainer()
 
 	// create tg bot
-	bot := services.NewBaseTgBotServer("put_your_token_here")
+	bot := services.NewBaseTgBotServer("6047991927:AAGeEp7AiAXkfnyvoShJFUn_a8T-4ZYgd0E")
 
 	// create task
 	task := tasks.NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
-		return tgBot.SendMessage(update.Message.Chat.ID, "hello")
-	}, "/hello")
+		digit, _ := strconv.Atoi(strings.Split(utils.GetMsgText(update), " ")[1])
+
+		return tgBot.SendMessage(update.Message.Chat.ID, fmt.Sprintf("got %v", digit))
+	}, "/hello \\d+")
 
 	cronTask := tasks.NewDefaultCronTask(tasks.NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
 		return tgBot.SendMessage(utils.GetChatId(update), "cronTask")
