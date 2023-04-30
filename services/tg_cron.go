@@ -88,7 +88,7 @@ func (c *TgBotServer) Start() {
 
 func (c *TgBotServer) isValidCommand(command string) (string, bool) {
 	sl := strings.Split(command, " ")
-	if len(sl) > 2 && sl[len(sl)-1] == prefix+c.bot.GetBot().Self.UserName {
+	if len(sl) >= 2 && sl[len(sl)-1] == prefix+c.bot.GetBot().Self.UserName {
 		return strings.Join(sl[:len(sl)-1], " "), true
 	}
 	return "", false
