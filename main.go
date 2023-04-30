@@ -20,22 +20,23 @@ func main() {
 	mt := maintainer.NewMaintainer()
 
 	// create tg bot
-	bot := services.NewBaseTgBotServer("put_your_token_here")
+	bot := services.NewBaseTgBotServer("test")
 
 	// create task
 	task := tasks.NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
 		digit, _ := strconv.Atoi(strings.Split(utils.GetMsgText(update), " ")[1])
 
 		return tgBot.SendMessage(update.Message.Chat.ID, fmt.Sprintf("got %v", digit))
-	}, "/hello \\d+")
+	}, "/hello \\d+", "send hello")
 
 	cronTask := tasks.NewDefaultCronTask(tasks.NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
 		return tgBot.SendMessage(utils.GetChatId(update), "cronTask")
-	}, "/cronTask"), time.Second*5)
+	}, "/cronTask", "send cronTask every 5 seconds"), time.Second*5)
 
 	// add tasks to tg bot
 	bot.AddTask(task)
 	bot.AddTask(cronTask)
+	bot.EnableInfo(utils.GetInfoTask(bot))
 
 	mt.AddServer("bot name", bot)
 
