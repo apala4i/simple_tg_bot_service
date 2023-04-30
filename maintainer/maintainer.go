@@ -12,7 +12,7 @@ type maintainer struct {
 }
 
 func NewMaintainer() Maintainer {
-	return new(maintainer)
+	return &maintainer{tgBots: make(map[string]*services.TgBotServer)}
 }
 
 func (m *maintainer) AddServer(botName string, bot *services.TgBotServer) {

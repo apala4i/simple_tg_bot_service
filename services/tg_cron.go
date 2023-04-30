@@ -1,17 +1,28 @@
 package services
 
 import (
+	"regexp"
+	"strings"
+
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 	"github.com/sirupsen/logrus"
+	"golang.org/x/exp/slices"
+)
+
+const (
+	baseTasksSize = 10
+	prefix        = "@"
 )
 
 type TgBotServer struct {
 	bot   *TgBot
-	tasks map[string]Task
+	tasks []Task
 }
 
 type Task interface {
 	Action(tgBot *TgBot, update tgbotapi.Update) error
+	GetNamePattern() *regexp.Regexp
+	CompareName(string) bool
 }
 
 type TaskWithData interface {
@@ -20,23 +31,30 @@ type TaskWithData interface {
 
 // noinspection GoUnusedExportedFunction
 func NewTgBotServer(bot *TgBot) *TgBotServer {
-	return &TgBotServer{bot: bot, tasks: make(map[string]Task)}
+	return &TgBotServer{bot: bot, tasks: make([]Task, 0, baseTasksSize)}
 }
 
 // noinspection GoUnusedExportedFunction
 func NewBaseTgBotServer(token string) *TgBotServer {
 	tgBotApi, err := tgbotapi.NewBotAPI(token)
-	tgBotApi.Debug = true
 	if err != nil {
 		panic(err)
 	}
+	tgBotApi.Debug = true
 	bot := NewTgBot(tgBotApi)
 	return NewTgBotServer(bot)
 }
 
-func (c *TgBotServer) AddTask(endpoint string, task Task) {
-	endpoint += " @" + c.bot.GetBot().Self.UserName
-	c.tasks[endpoint] = task
+func (c *TgBotServer) AddTask(newTask Task) bool {
+	index := slices.IndexFunc(c.tasks, func(task Task) bool {
+		return task.CompareName(newTask.GetNamePattern().String())
+	})
+	if index == -1 {
+		c.tasks = append(c.tasks, newTask)
+		return true
+	}
+	logrus.Infof("[AddTask] task with such name pattern alreadyExists. taskName: %v", newTask.GetNamePattern().String())
+	return false
 }
 
 func (c *TgBotServer) Start() {
@@ -51,13 +69,27 @@ func (c *TgBotServer) Start() {
 		if !update.Message.IsCommand() {
 			continue
 		}
-		task, ok := c.tasks[update.Message.Text]
-		if ok {
-			err := task.Action(c.bot, update)
+		command, ok := c.isValidCommand(update.Message.Text)
+		if !ok {
+			continue
+		}
+		index := slices.IndexFunc(c.tasks, func(task Task) bool {
+			return task.CompareName(command)
+		})
+		if index != -1 {
+			err := c.tasks[index].Action(c.bot, update)
 			if err != nil {
 				logrus.Errorf("error, while processing task: %v", err)
 			}
 		}
 
 	}
+}
+
+func (c *TgBotServer) isValidCommand(command string) (string, bool) {
+	sl := strings.Split(command, " ")
+	if len(sl) == 2 && sl[1] == prefix+c.bot.GetBot().Self.UserName {
+		return sl[0], true
+	}
+	return "", false
 }
