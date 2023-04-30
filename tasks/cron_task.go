@@ -1,6 +1,7 @@
 package tasks
 
 import (
+	"regexp"
 	"sync"
 	"time"
 
@@ -16,6 +17,7 @@ type CronTask struct {
 	task        services.Task
 	failureTask services.Task
 	stopTask    services.Task
+	startTask   services.Task
 	sleepTime   time.Duration
 }
 
@@ -23,7 +25,11 @@ type BaseFailureTask struct {
 	msg string
 }
 
-const defaultMsg = "already running"
+const (
+	defaultFailureMsg = "already running!\n"
+	defaultStartMsg   = "started!\n"
+	defaultStoppedMsg = "stopped!\n"
+)
 
 func newBaseFailureTask(msg string) services.Task {
 	return NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
@@ -31,29 +37,62 @@ func newBaseFailureTask(msg string) services.Task {
 	}, baseName)
 }
 
-func NewCronTask(task services.Task, failureTask services.Task, sleepTime time.Duration) services.Task {
-	return &CronTask{running: make(map[int64]struct{}), task: task, failureTask: failureTask, sleepTime: sleepTime}
+func newBaseStopTask(taskName string, msg string) services.Task {
+	name := "/stop_" + taskName[1:]
+	return NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
+		return tgBot.ReplyMessage(update, msg)
+	}, name)
 }
 
-func NewReplyCronAction(task services.Task, msg string, sleepTime time.Duration) services.Task {
-	return NewCronTask(task, newBaseFailureTask(msg), sleepTime)
+func newBaseStartTask(msg string) services.Task {
+	return NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
+		return tgBot.ReplyMessage(update, msg)
+	}, baseName)
+}
+
+func NewCronTask(task services.Task,
+	failureTask services.Task,
+	stopTask services.Task,
+	startTask services.Task,
+	sleepTime time.Duration) services.Task {
+	return &CronTask{
+		running:     make(map[int64]struct{}),
+		task:        task,
+		failureTask: failureTask,
+		startTask:   startTask,
+		stopTask:    stopTask,
+		sleepTime:   sleepTime,
+	}
+}
+
+func NewReplyCronAction(task services.Task,
+	failureMsg string,
+	startMsg string,
+	stopMsg string,
+	sleepTime time.Duration) services.Task {
+	return NewCronTask(task,
+		newBaseFailureTask(failureMsg),
+		newBaseStopTask(task.GetNamePattern().String(), stopMsg),
+		newBaseStartTask(startMsg), sleepTime)
 }
 
 // noinspection GoUnusedExportedFunction
-func NewDefaultCronAction(task services.Task, sleepTime time.Duration) services.Task {
-	return NewReplyCronAction(task, defaultMsg, sleepTime)
+func NewDefaultCronTask(task services.Task, sleepTime time.Duration) services.Task {
+	return NewReplyCronAction(task, defaultFailureMsg, defaultStartMsg, defaultStoppedMsg, sleepTime)
 }
 
 func (c *CronTask) Action(tgBot *services.TgBot, update tgbotapi.Update) error {
 	_, ok := c.running[update.Message.Chat.ID]
-	if ok && c.failureTask.CompareName(update.Message.Text) {
+	if ok && c.stopTask.CompareName(update.Message.Text) {
 		c.deleteFromQueue(update.Message.Chat.ID)
-		err := c.failureTask.Action(tgBot, update)
+		err := c.stopTask.Action(tgBot, update)
 		if err != nil {
 			logrus.Errorf("stop action failed. error: %v", err)
 		}
-	}
-	if !ok {
+	} else if !ok {
+		if err := c.startTask.Action(tgBot, update); err != nil {
+			logrus.Errorf("start action failed. err: %v", err)
+		}
 		c.running[update.Message.Chat.ID] = struct{}{}
 		go func(running *map[int64]struct{}) {
 			for {
@@ -82,14 +121,10 @@ func (c *CronTask) deleteFromQueue(chatId int64) {
 	c.m.Unlock()
 }
 
-func (c *CronTask) GetName() string {
-	return c.task.GetName()
+func (c *CronTask) GetNamePattern() *regexp.Regexp {
+	return c.task.GetNamePattern()
 }
 
 func (c *CronTask) CompareName(name string) bool {
-	return c.task.GetName() == name || c.stopTask.GetName() == name
-}
-
-func (c *CronTask) addPostfixToName(s string) {
-
+	return c.task.GetNamePattern().Match([]byte(name)) || c.stopTask.GetNamePattern().Match([]byte(name))
 }

@@ -1,6 +1,7 @@
 package services
 
 import (
+	"regexp"
 	"strings"
 
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
@@ -20,7 +21,7 @@ type TgBotServer struct {
 
 type Task interface {
 	Action(tgBot *TgBot, update tgbotapi.Update) error
-	GetName() string
+	GetNamePattern() *regexp.Regexp
 	CompareName(string) bool
 }
 
@@ -30,7 +31,7 @@ type TaskWithData interface {
 
 // noinspection GoUnusedExportedFunction
 func NewTgBotServer(bot *TgBot) *TgBotServer {
-	return &TgBotServer{bot: bot, tasks: make([]Task, baseTasksSize)}
+	return &TgBotServer{bot: bot, tasks: make([]Task, 0, baseTasksSize)}
 }
 
 // noinspection GoUnusedExportedFunction
@@ -46,13 +47,13 @@ func NewBaseTgBotServer(token string) *TgBotServer {
 
 func (c *TgBotServer) AddTask(newTask Task) bool {
 	index := slices.IndexFunc(c.tasks, func(task Task) bool {
-		return task.CompareName(newTask.GetName())
+		return task.CompareName(newTask.GetNamePattern().String())
 	})
-	if index != -1 {
+	if index == -1 {
 		c.tasks = append(c.tasks, newTask)
 		return true
 	}
-	logrus.Infof("[AddTask] task with such name alreadyExists. taskName: %v", newTask.GetName())
+	logrus.Infof("[AddTask] task with such name pattern alreadyExists. taskName: %v", newTask.GetNamePattern().String())
 	return false
 }
 
@@ -68,11 +69,12 @@ func (c *TgBotServer) Start() {
 		if !update.Message.IsCommand() {
 			continue
 		}
-		if !c.isValidCommand(update.Message.Text) {
+		command, ok := c.isValidCommand(update.Message.Text)
+		if !ok {
 			continue
 		}
 		index := slices.IndexFunc(c.tasks, func(task Task) bool {
-			return task.CompareName(update.Message.Text)
+			return task.CompareName(command)
 		})
 		if index != -1 {
 			err := c.tasks[index].Action(c.bot, update)
@@ -84,10 +86,10 @@ func (c *TgBotServer) Start() {
 	}
 }
 
-func (c *TgBotServer) isValidCommand(command string) bool {
+func (c *TgBotServer) isValidCommand(command string) (string, bool) {
 	sl := strings.Split(command, " ")
 	if len(sl) == 2 && sl[1] == prefix+c.bot.GetBot().Self.UserName {
-		return true
+		return sl[0], true
 	}
-	return false
+	return "", false
 }

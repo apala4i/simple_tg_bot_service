@@ -1,9 +1,12 @@
 package main
 
 import (
+	"time"
+
 	"github.com/apala4i/simple_tg_bot_service/maintainer"
 	"github.com/apala4i/simple_tg_bot_service/services"
 	"github.com/apala4i/simple_tg_bot_service/tasks"
+	"github.com/apala4i/simple_tg_bot_service/utils"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api/v5"
 )
 
@@ -21,8 +24,13 @@ func main() {
 		return tgBot.SendMessage(update.Message.Chat.ID, "hello")
 	}, "/hello")
 
-	// add task to tg bot
+	cronTask := tasks.NewDefaultCronTask(tasks.NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
+		return tgBot.SendMessage(utils.GetChatId(update), "cronTask")
+	}, "/cronTask"), time.Second*5)
+
+	// add tasks to tg bot
 	bot.AddTask(task)
+	bot.AddTask(cronTask)
 
 	mt.AddServer("bot name", bot)
 
