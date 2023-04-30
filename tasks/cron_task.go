@@ -11,7 +11,7 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type CronTask struct {
+type cronTask struct {
 	running     map[int64]struct{}
 	m           sync.Mutex
 	task        services.Task
@@ -21,7 +21,7 @@ type CronTask struct {
 	sleepTime   time.Duration
 }
 
-type BaseFailureTask struct {
+type baseFailureTask struct {
 	msg string
 }
 
@@ -34,20 +34,20 @@ const (
 func newBaseFailureTask(msg string) services.Task {
 	return NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
 		return tgBot.ReplyMessage(update, msg)
-	}, baseName)
+	}, baseName, "")
 }
 
 func newBaseStopTask(taskName string, msg string) services.Task {
 	name := "/stop_" + taskName[1:]
 	return NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
 		return tgBot.ReplyMessage(update, msg)
-	}, name)
+	}, name, "stop "+taskName)
 }
 
 func newBaseStartTask(msg string) services.Task {
 	return NewTask(func(tgBot *services.TgBot, update tgbotapi.Update) error {
 		return tgBot.ReplyMessage(update, msg)
-	}, baseName)
+	}, baseName, "")
 }
 
 func NewCronTask(task services.Task,
@@ -55,7 +55,7 @@ func NewCronTask(task services.Task,
 	stopTask services.Task,
 	startTask services.Task,
 	sleepTime time.Duration) services.Task {
-	return &CronTask{
+	return &cronTask{
 		running:     make(map[int64]struct{}),
 		task:        task,
 		failureTask: failureTask,
@@ -81,7 +81,7 @@ func NewDefaultCronTask(task services.Task, sleepTime time.Duration) services.Ta
 	return NewReplyCronAction(task, defaultFailureMsg, defaultStartMsg, defaultStoppedMsg, sleepTime)
 }
 
-func (c *CronTask) Action(tgBot *services.TgBot, update tgbotapi.Update) error {
+func (c *cronTask) Action(tgBot *services.TgBot, update tgbotapi.Update) error {
 	_, ok := c.running[update.Message.Chat.ID]
 	if ok && c.stopTask.CompareName(update.Message.Text) {
 		c.deleteFromQueue(update.Message.Chat.ID)
@@ -115,16 +115,20 @@ func (c *CronTask) Action(tgBot *services.TgBot, update tgbotapi.Update) error {
 	return nil
 }
 
-func (c *CronTask) deleteFromQueue(chatId int64) {
+func (c *cronTask) deleteFromQueue(chatId int64) {
 	c.m.Lock()
 	delete(c.running, chatId)
 	c.m.Unlock()
 }
 
-func (c *CronTask) GetNamePattern() *regexp.Regexp {
+func (c *cronTask) GetNamePattern() *regexp.Regexp {
 	return c.task.GetNamePattern()
 }
 
-func (c *CronTask) CompareName(name string) bool {
+func (c *cronTask) GetDescription() string {
+	return c.task.GetDescription() + "\n" + c.stopTask.GetDescription()
+}
+
+func (c *cronTask) CompareName(name string) bool {
 	return c.task.GetNamePattern().Match([]byte(name)) || c.stopTask.GetNamePattern().Match([]byte(name))
 }

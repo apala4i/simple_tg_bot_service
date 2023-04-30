@@ -13,36 +13,41 @@ const (
 	baseName = "baseName"
 )
 
-type TaskImpl struct {
-	ActionFunc  func(tgBot *services.TgBot, update tgbotapi.Update) error
+type taskImpl struct {
+	actionFunc  func(tgBot *services.TgBot, update tgbotapi.Update) error
 	namePattern *regexp.Regexp
+	description string
 }
 
-func (t *TaskImpl) Action(tgBot *services.TgBot, update tgbotapi.Update) error {
-	return t.ActionFunc(tgBot, update)
+func (t *taskImpl) Action(tgBot *services.TgBot, update tgbotapi.Update) error {
+	return t.actionFunc(tgBot, update)
 }
 
-func (t *TaskImpl) GetNamePattern() *regexp.Regexp {
+func (t *taskImpl) GetNamePattern() *regexp.Regexp {
 	return t.namePattern
 }
 
-func (t *TaskImpl) CompareName(name string) bool {
+func (t *taskImpl) CompareName(name string) bool {
 	return t.GetNamePattern().Match([]byte(name))
 }
 
 // noinspection GoUnusedExportedFunction
-func NewTask(actionFunc func(tgBot *services.TgBot, update tgbotapi.Update) error, name string) services.Task {
-	task := &TaskImpl{ActionFunc: actionFunc}
+func NewTask(actionFunc func(tgBot *services.TgBot,
+	update tgbotapi.Update) error,
+	name string,
+	dsc string) services.Task {
+	task := &taskImpl{actionFunc: actionFunc, description: dsc}
 	pattern, err := regexp.Compile(name)
 	if err != nil {
 		logrus.Errorf("regexp compile error: %v", err)
 	}
 	task.namePattern = pattern
 	return task
-
 }
 
-// noinspection GoUnusedExportedFunction
-func NewUnnamedTask(actionFunc func(tgBot *services.TgBot, update tgbotapi.Update) error) services.Task {
-	return NewTask(actionFunc, baseName)
+func (t *taskImpl) GetDescription() string {
+	if len(t.description) > 0 {
+		return t.GetNamePattern().String() + " - " + t.description
+	}
+	return ""
 }

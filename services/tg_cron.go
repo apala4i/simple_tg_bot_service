@@ -15,14 +15,16 @@ const (
 )
 
 type TgBotServer struct {
-	bot   *TgBot
-	tasks []Task
+	bot      *TgBot
+	tasks    []Task
+	infOnErr Task
 }
 
 type Task interface {
 	Action(tgBot *TgBot, update tgbotapi.Update) error
 	GetNamePattern() *regexp.Regexp
 	CompareName(string) bool
+	GetDescription() string
 }
 
 type TaskWithData interface {
@@ -81,6 +83,11 @@ func (c *TgBotServer) Start() {
 			if err != nil {
 				logrus.Errorf("error, while processing task: %v", err)
 			}
+		} else if c.infOnErr != nil {
+			err := c.infOnErr.Action(c.bot, update)
+			if err != nil {
+				logrus.Errorf("error, while processing task: %v", err)
+			}
 		}
 
 	}
@@ -92,4 +99,12 @@ func (c *TgBotServer) isValidCommand(command string) (string, bool) {
 		return strings.Join(sl[:len(sl)-1], " "), true
 	}
 	return "", false
+}
+
+func (c *TgBotServer) GetTasks() []Task {
+	return c.tasks
+}
+
+func (c *TgBotServer) EnableInfo(task Task) {
+	c.infOnErr = task
 }
